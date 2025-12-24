@@ -15,15 +15,24 @@ tasks.register("copyGitHooks", Copy::class.java) {
     from("$rootDir/scripts/pre-commit")
     into("$rootDir/.git/hooks/")
 }
-tasks.register("installGitHooks", Exec::class.java) {
-    description = "Installs the pre-commit git hooks from /git-hooks."
+tasks.register("installGitHooks") {
+    description = "Installs the pre-commit git hooks in a cross-platform way"
     group = "git hooks"
-    workingDir = rootDir
-    commandLine = listOf("chmod")
-    args("-R", "+x", ".git/hooks/")
+
     dependsOn("copyGitHooks")
+
     doLast {
-        logger.info("Git hook installed successfully.")
+        val os = org.gradle.internal.os.OperatingSystem.current()
+
+        if (!os.isWindows) {
+            providers.exec {
+                workingDir = rootDir
+                commandLine("chmod", "-R", "+x", ".git/hooks/")
+            }
+            logger.lifecycle("Git hook installed successfully (Unix).")
+        } else {
+            logger.lifecycle("Windows detected – skipping chmod (not required).")
+        }
     }
 }
 
